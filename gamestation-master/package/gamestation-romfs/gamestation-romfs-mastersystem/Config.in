@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_MASTERSYSTEM
+	bool "gamestation-romfs-mastersystem"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_GENESISPLUSGX \
+	  || BR2_PACKAGE_LIBRETRO_PICODRIVE
+	help
+	  share_init/roms and xml for mastersystem

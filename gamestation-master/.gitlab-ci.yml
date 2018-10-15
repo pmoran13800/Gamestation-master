@@ -1,0 +1,279 @@
+image: docker:latest
+
+stages:
+  - build
+  - release
+  - deploy
+  - canary
+  - clean
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  PROD_STACK_NAME: archive
+  REVIEW_STACK_NAME: archive-review
+  IMAGE: gamestation/archive
+
+.build_template: &build_definition
+  stage: build
+  script:
+    - export GAMESTATION_VERSION="${CI_COMMIT_TAG:-${CI_COMMIT_REF_SLUG:0:12} (${CI_COMMIT_SHA:0:8}) ${CI_PIPELINE_ID} ${ARCH} $(date '+%Y/%m/%d %H:%M:%S')}"
+    - docker build -t "gamestation-${ARCH}" .
+    - docker run --rm -v `pwd`:/work -v /gamestation-builds/dl:/share/dl -v "/gamestation-builds/hosts/host-${ARCH}:/share/host" -v "/gamestation-builds/ccaches/ccache-${ARCH}:/share/ccache" -e "ARCH=${ARCH}" -e "GAMESTATION_VERSION_LABEL=${GAMESTATION_VERSION}" -e "GAMESTATION_CCACHE_DIR=/share/ccache" "gamestation-${ARCH}" 2>&1 | tee build.log | grep '>>>' || tac build.log | grep '>>>' -m 1 -B 9999 | tac
+    - export DIST_DIR="updates/dist/v1/upgrade/${ARCH}"
+    - mkdir -p "${DIST_DIR}"
+    - cp output/images/gamestation/* "${DIST_DIR}"
+    - rm -rf output/
+    - echo "${GAMESTATION_VERSION}" >> "${DIST_DIR}/gamestation.version"
+    - cp CHANGELOG.md "${DIST_DIR}/gamestation.changelog"
+  after_script:
+    - rm -rf buildroot
+  artifacts:
+    name: dist-${ARCH}-${CI_BUILD_ID}
+    when: always
+    paths:
+      - updates/dist/v1/upgrade/${ARCH}
+      - build.log
+    expire_in: 2 mos
+
+build rpi1:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'rpi1'
+build rpi2:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'rpi2'
+build rpi3:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'rpi3'
+build x86_64:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'x86_64'
+build x86:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'x86'
+build odroidc2:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'odroidc2'
+build odroidxu4:
+  <<: *build_definition
+  only:
+    - master
+    - tags
+  variables:
+    ARCH: 'odroidxu4'
+
+build rpi1 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'rpi1'
+build rpi2 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'rpi2'
+build rpi3 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'rpi3'
+build x86_64 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'x86_64'
+build x86 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'x86'
+build odroidc2 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'odroidc2'
+build odroidxu4 for test:
+  <<: *build_definition
+  when: manual
+  only:
+    - branches
+  except:
+    - master
+  variables:
+    ARCH: 'odroidxu4'
+
+
+### Release
+.release_template: &release_definition
+  stage: release
+  variables:
+    ARCHIVE_IMAGE: the image to build
+    RANCHER_DIRECTORY: type of the deployment (prod, review)
+  script:
+    - echo "Creating image ${ARCHIVE_IMAGE}"
+    - test -n "${SKIP_IMAGES}" && rm -rf updates/dist/v1/upgrade/*/*.img*
+    - env | grep "CI_\|GITLAB" > envfile && cat "updates/${RANCHER_DIRECTORY}.template.html" | docker run --rm --env-file envfile -i loicmahieu/alpine-envsubst > updates/dist/index.html
+    - cd updates
+    - docker build -t "${ARCHIVE_IMAGE}" .
+    - docker login -u "${DOCKER_IO_LOGIN}" -p "${DOCKER_IO_PASSWORD}"
+    - docker push "${ARCHIVE_IMAGE}"
+
+release prod:
+  <<: *release_definition
+  variables:
+    ARCHIVE_IMAGE: ${IMAGE}:${CI_COMMIT_TAG}
+    RANCHER_DIRECTORY: prod
+  only:
+  - tags
+
+release review:
+  <<: *release_definition
+  when: manual
+  variables:
+    ARCHIVE_IMAGE: ${IMAGE}:${CI_COMMIT_REF_SLUG}
+    RANCHER_DIRECTORY: review
+    SKIP_IMAGES: 'true'
+  except:
+    - tags
+
+
+### Deploy
+.deploy_template: &deploy_definition
+  stage: deploy
+  image: registry.gitlab.com/gamestation/ops/rancher-cli:0.6.2
+  dependencies: []
+  variables:
+    ARCHIVE_IMAGE: image to deploy
+    ARCHIVE_FQDN: fqdn of the service
+    RANCHER_DIRECTORY: the rancher directory to use
+    STACK: the stack to deploy on
+  script:
+    - cd "updates/rancher/${RANCHER_DIRECTORY}"
+    - sed "s/RANCHER_SERVICENAME/${SERVICENAME}/" -i docker-compose.yml rancher-compose.yml
+    - rancher up -s "$STACK" -u --force-upgrade --batch-size 50 -d
+
+deploy prod:
+  <<: *deploy_definition
+  variables:
+    ARCHIVE_IMAGE: ${IMAGE}:${CI_COMMIT_TAG}
+    ARCHIVE_FQDN: lb-${PROD_STACK_NAME}-prod.gamestation.com
+    RANCHER_DIRECTORY: prod
+    RECALEUR_CANARY: ${RECALEUR_CANARY}
+    RECALEUR_RESPONSE: https://lb-${PROD_STACK_NAME}-prod.gamestation.com
+    RECALEUR_PATH: "/v1/upgrade"
+    RECALEUR_DELTA: ${RECALEUR_DELTA}
+    STACK: ${PROD_STACK_NAME}
+  before_script:
+    - export RECALEUR_EXPIRE=$(date -u -d "1970.01.01-00:00:$(date +"%s + 6 * 3600"|xargs expr)" +%Y-%m-%d-%H:%M)
+  only:
+    - tags
+  environment:
+    name: prod
+    url: https://lb-${PROD_STACK_NAME}-prod.gamestation.com
+
+deploy review:
+  <<: *deploy_definition
+  when: manual
+  variables:
+    ARCHIVE_IMAGE: ${IMAGE}:${CI_COMMIT_REF_SLUG}
+    ARCHIVE_FQDN: ${CI_ENVIRONMENT_SLUG}-${REVIEW_STACK_NAME}-prod.gamestation.com
+    SERVICENAME: ${CI_ENVIRONMENT_SLUG}
+    RANCHER_DIRECTORY: review
+    STACK: ${REVIEW_STACK_NAME}
+  except:
+    - tags
+  environment:
+    name: review/${CI_COMMIT_REF_SLUG}
+    url: https://${CI_ENVIRONMENT_SLUG}-${REVIEW_STACK_NAME}-prod.gamestation.com
+    on_stop: clean review
+
+validate release:
+  <<: *deploy_definition
+  stage: canary
+  when: manual
+  dependencies: []
+  variables:
+    RANCHER_DIRECTORY: recaleur
+    RECALEUR_CANARY: 256
+    RECALEUR_RESPONSE: https://lb-${PROD_STACK_NAME}-prod.gamestation.com
+    RECALEUR_PATH: "/v1/upgrade"
+    RECALEUR_DELTA: ${RECALEUR_DELTA}
+    STACK: ${PROD_STACK_NAME}
+  only:
+    - tags
+
+emergency valve:
+  <<: *deploy_definition
+  stage: canary
+  when: manual
+  dependencies: []
+  variables:
+    RANCHER_DIRECTORY: recaleur
+    RECALEUR_CANARY: 0
+    RECALEUR_RESPONSE: https://lb-${PROD_STACK_NAME}-prod.gamestation.com
+    RECALEUR_PATH: "/v1/upgrade"
+    RECALEUR_DELTA: "0ms"
+    STACK: ${PROD_STACK_NAME}
+  only:
+    - tags
+
+clean review:
+  image: registry.gitlab.com/gamestation/ops/rancher-cli:0.6.2
+  stage: clean
+  when: manual
+  dependencies: []
+  only:
+    - branches
+  script:
+    - echo "cleaning ${ARCHIVE_IMAGE} from ${REVIEW_STACK_NAME}/${CI_ENVIRONMENT_SLUG}"
+    - rancher rm "${REVIEW_STACK_NAME}/${CI_ENVIRONMENT_SLUG}"
+  environment:
+    name: review/${CI_COMMIT_REF_SLUG}
+    action: stop

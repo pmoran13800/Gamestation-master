@@ -1,0 +1,73 @@
+#!/bin/sh
+# Start/stop gamestation-manager
+
+PIDFILE=/var/run/gamestation-manager.pid
+SITEPATH=/usr/gamestation-manager
+NAME="S94manager"
+RUN_AS=`id -u root`
+CMD=/usr/gamestation-manager/manage.py
+OPTS="runserver 0.0.0.0:80 --settings=project.settings_production --noreload"
+
+systemsetting="python /usr/lib/python2.7/site-packages/configgen/settings/gamestationSettings.pyc"
+
+do_start() {
+    version="`$systemsetting  -command load -key system.manager.version`"
+    recallog "... Starting manager v${version}"
+    case "$version" in
+    1)
+        start-stop-daemon --start --background --user $RUN_AS --pidfile $PIDFILE --make-pidfile --chuid $RUN_AS --startas $CMD -- $OPTS
+        ;;
+    2)
+        cd /usr/gamestation-manager2/ && NODE_ENV=production PORT=80 node dist/server.js &
+        ;;
+    *)
+        cd /usr/gamestation-manager2/ && NODE_ENV=production PORT=80 node dist/server.js &
+    esac
+}
+
+do_stop() {
+    version="`$systemsetting  -command load -key system.manager.version`"
+    case "$version" in
+    1)
+        start-stop-daemon --stop --pidfile $PIDFILE
+        ;;
+    2)
+        ps -ef | grep node | grep "dist/server.js" | grep -v grep | awk '{print $1}' | xargs kill
+        ;;
+    esac
+}
+
+
+case "$1" in
+start)
+    enabled="`$systemsetting  -command load -key system.security.enabled`"
+    if [ "$enabled" == "1" ];then
+        recallog "Will not start $NAME : system.security.enabled is set to 1"
+        exit 0
+    fi
+    enabled="`$systemsetting  -command load -key system.manager.enabled`"
+    if [ "$enabled" != "0" ];then
+        recallog "Starting $NAME"
+        do_start
+    else
+        recallog "Will not start $NAME : system.manager.enabled is set to 0"
+    fi
+
+    
+    ;;
+stop)
+    recallog "Stopping $NAME"
+    do_stop
+    ;;
+restart)
+    recallog "Restarting $NAME"
+    do_stop
+    do_start
+    ;;
+*)
+    echo "Usage: /etc/init.d/S94Manager {start|stop|restart}"
+    exit 2
+    ;;
+esac
+exit 0
+

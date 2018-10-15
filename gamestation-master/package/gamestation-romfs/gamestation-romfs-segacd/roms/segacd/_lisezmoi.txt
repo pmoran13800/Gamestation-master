@@ -1,0 +1,7 @@
+## GAMESTATION - SYSTEM SEGACD/SEGACD_32X ##
+
+Placez ici vos roms segacd et segacd 32X.
+
+Les roms doivent avoir l'extension ".cue/.iso/.chd"
+
+Seul le core GenesisPlusGX supporte le format .chd

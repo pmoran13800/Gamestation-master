@@ -1,0 +1,6 @@
+config BR2_PACKAGE_GAMESTATION_MANAGER2
+	bool "gamestation-manager2"
+	depends on BR2_PACKAGE_NODEJS
+	help
+	  A nodejs based web manager
+	  https://github.com/djlechuck/gamestation-manager

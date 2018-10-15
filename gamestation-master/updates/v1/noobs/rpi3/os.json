@@ -1,0 +1,12 @@
+{
+  "name": "gamestationOS-rpi3",
+  "version": "v4.1.0",
+  "release_date": "2017-09-24",
+  "kernel": "4.4",
+  "description": "The gamestation operating system for rpi3.",
+  "url": "http://www.gamestation.com/",
+  "supported_hex_revisions": "2082",
+  "supported_models": [
+    "Pi 3"
+   ]
+}

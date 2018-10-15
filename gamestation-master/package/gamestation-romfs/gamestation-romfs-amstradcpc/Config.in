@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_AMSTRADCPC
+	bool "gamestation-romfs-amstradcpc"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_CAP32 \
+	  || BR2_PACKAGE_LIBRETRO_CROCODS
+	help
+	  share_init/roms and xml for amstradcpc

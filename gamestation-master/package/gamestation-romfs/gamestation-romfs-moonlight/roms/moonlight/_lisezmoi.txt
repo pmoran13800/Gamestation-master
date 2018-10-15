@@ -1,0 +1,7 @@
+## GAMESTATION - SYSTEM MOONLIGHT ##
+
+Ce système permet le streaming de jeux pc/gamestation si vous possédez un gpu nvidia compatible GFE.
+Des fichiers ".moonlight" seront créés lors du processus d'appairage.
+
+Merci de suivre le wiki associé :
+https://github.com/gamestation/gamestation-os/wiki/Setup-moonlight-%28EN%29

@@ -1,0 +1,8 @@
+config BR2_PACKAGE_GAMESTATION_CONFIGGEN
+	bool "gamestation configgen"
+	select BR2_PACKAGE_PYTHON
+	help
+	  The configuration utility for gamestation
+
+	  https://gitlab.com/gamestation/gamestation-configgen
+

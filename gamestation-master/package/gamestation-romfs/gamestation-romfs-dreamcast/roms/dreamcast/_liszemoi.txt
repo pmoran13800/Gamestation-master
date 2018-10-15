@@ -1,0 +1,5 @@
+## GAMESTATION - DREAMCAST ##
+
+Placez vos images disques ici
+
+Les images doivent avoir une extension ".gdi/.cdi/.chd"

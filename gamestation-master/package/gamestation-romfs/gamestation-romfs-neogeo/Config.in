@@ -1,0 +1,10 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_NEOGEO
+	bool "gamestation-romfs-neogeo"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_MAME2003 \
+	  || BR2_PACKAGE_LIBRETRO_IMAME \
+	  || BR2_PACKAGE_LIBRETRO_FBA \
+	  || BR2_PACKAGE_PIFBA \
+	  || BR2_PACKAGE_LIBRETRO_MAME2010
+	help
+	  share_init/roms and xml for neogeo

@@ -1,0 +1,6 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_SCUMMVM
+	bool "gamestation-romfs-scummvm"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_SCUMMVM
+	help
+	  share_init/roms and xml for scummvm

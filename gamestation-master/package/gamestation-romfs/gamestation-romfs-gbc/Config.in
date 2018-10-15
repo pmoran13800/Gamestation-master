@@ -1,0 +1,8 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_GBC
+	bool "gamestation-romfs-gbc"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_GAMBATTE \
+	  || BR2_PACKAGE_LIBRETRO_TGBDUAL \
+	  || BR2_PACKAGE_LIBRETRO_MGBA
+	help
+	  share_init/roms and xml for gbc

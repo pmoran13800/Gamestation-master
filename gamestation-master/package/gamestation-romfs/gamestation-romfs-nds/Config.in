@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_NDS
+	bool "gamestation-romfs-nds"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_DESMUME \
+	  || BR2_PACKAGE_LIBRETRO_MELONDS
+	help
+	  share_init/roms and xml for nds

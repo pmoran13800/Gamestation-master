@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GAMESTATION_API
+        bool "gamestation-api"
+	depends on BR2_PACKAGE_NODEJS
+        help
+          Neolao's api project
+
+	  https://github.com/neolao/gamestation-api

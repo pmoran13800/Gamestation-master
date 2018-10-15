@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_LYNX
+	bool "gamestation-romfs-lynx"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_HANDY \
+	  || BR2_PACKAGE_LIBRETRO_BEETLE_LYNX
+	help
+	  share_init/roms and xml for lynx

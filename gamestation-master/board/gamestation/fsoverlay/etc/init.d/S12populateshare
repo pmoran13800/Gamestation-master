@@ -1,0 +1,98 @@
+#!/bin/bash
+
+if test "$1" != "start"
+then
+  exit 0
+fi
+
+source /gamestation/scripts/gamestation-includes.sh
+
+IN=/gamestation/share_init
+OUT=/gamestation/share
+# force the creation of some directories
+for DIR in cheats \
+           system/.cache \
+           system/.config/lirc \
+           system/.emulationstation/themes \
+           system/bluetooth \
+           system/configs \
+           system/logs \
+           system/upgrade
+do
+    if test ! -e "$OUT""/""$DIR"
+    then
+        mkdir -p "$OUT""/""$DIR"
+    fi
+done
+
+# directories / files to copy when initializing the user data
+#
+# NO UPDATE IS POSSIBLE ON THESE DIRECTORIES WHEN GAMESTATION IS UPDATED
+#
+# there are almost empty, it's just for the structure
+# the user can delete the directory, it will recreate the structure
+# the user can delete files, files will not be recreated
+for FILE in music bios bios/amiga bios/keropi extractions kodi saves saves/amiga screenshots \
+            system/.config/lirc/lircd.conf \
+            system/.emulationstation/{es_input.cfg,es_settings.cfg} \
+            system/{.hatari,.kodi,.atari800.cfg} \
+            system/configs/{fba,moonlight,mupen64,ppsspp,reicast,retroarch,shadersets,xarcade2jstick,dosbox,dolphin-emu,advancemame} \
+            system/gamestation.conf \
+            bios/mame2003
+do
+    # not wanted for kodi
+    test -e "$IN""/""$FILE" && test ! -e "$OUT""/""$FILE" && cp -r "$IN""/""$FILE" "$OUT""/""$FILE"
+done
+
+# directories to force directories exists
+# files are linked
+#
+# ONLY NEW DIRECTORIES ARE UPDATED WHEN GAMESTATION IS UPDATED
+#
+# the user can't delete any directory, otherwise, it will recreate it, with link inside
+# the user can delete links and add its own files
+# to reset the directory or update it, the user has to remove the directory (we are unable to differenciate new files from gamestation update from a file removed by the user)
+for DIR in roms roms/mame/mame2003 system/configs
+do
+    [ ! -e "$OUT""/""$DIR" ] && mkdir "$OUT""/""$DIR"
+    find "$IN""/""$DIR" -mindepth 1 -maxdepth 1 -type d |
+        while read SUBDIR
+        do
+            BNAME=$(basename "$SUBDIR")
+            TDIR="$OUT""/""$DIR""/""$BNAME"
+            if test ! -e "$TDIR" # ASSUME THAT PARENTS ARE LISTED BEFORE CHILDREN
+            then
+                cp -r "$SUBDIR" "$TDIR"
+            fi
+        done
+done
+
+# gamestation.conf : upgrade if necessary
+doGamestationUpgrades
+
+# ssh : create the ssh key while the -R option of dropbear try a chown or an operation which is not permitted on fat32
+if ! test -e /gamestation/share/system/ssh
+then
+    mkdir -p /gamestation/share/system/ssh
+    dropbearkey -t ecdsa -f /gamestation/share/system/ssh/dropbear_ecdsa_host_key
+    dropbearkey -t rsa   -f /gamestation/share/system/ssh/dropbear_rsa_host_key
+    dropbearkey -t dss   -f /gamestation/share/system/ssh/dropbear_dss_host_key
+fi
+
+# bluetooth : now gotta tar/untar, the directory structure for bluez5 is more complex
+# once untar, delete the cache folder. The exclude tar option of busybox is dreadful
+btTar=/gamestation/share/system/bluetooth/bluetooth.tar
+tar xvf "$btTar" -C / 2>/dev/null 
+
+# udev : create a link for rules persistance
+mkdir -p /gamestation/share/system/udev/rules.d
+rm -rf /run/udev/rules.d
+ln -s /gamestation/share/system/udev/rules.d/ /run/udev/
+test ! -e /gamestation/share/system/gamestation.changelog.done && cp /gamestation/gamestation.changelog /gamestation/share/system/gamestation.changelog.done
+
+# create a uuid if it's missing
+[ ! -e /gamestation/share/system/uuid ] && /gamestation/scripts/system/uuid.sh --uuid-file /gamestation/share/system/uuid
+
+# build the cores list if it doesn't exist
+[ ! -e /gamestation/share/system/configs/retroarch.corenames ] && upgradeRetroarchCoreNames -f /gamestation/share/system/configs/retroarch.corenames
+# END

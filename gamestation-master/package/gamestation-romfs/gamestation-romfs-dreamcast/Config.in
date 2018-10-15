@@ -1,0 +1,6 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_DREAMCAST
+	bool "gamestation-romfs-dreamcast"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_REICAST
+	help
+	  share_init/roms and xml for dreamcast

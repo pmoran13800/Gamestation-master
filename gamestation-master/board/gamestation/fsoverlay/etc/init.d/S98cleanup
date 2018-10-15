@@ -1,0 +1,50 @@
+#!/bin/bash
+
+if test "$1" != "start"
+then
+  exit 0
+fi
+
+# the update system doesn't allow the file removing. So use this script for this task
+
+doClean() {
+    if test -e "$1"
+    then
+	mount -o remount,rw /
+	rm -rf "$1"
+	mount -o remount,ro /
+    fi
+}
+
+# V4.0.0 2016-01-29
+doClean "/etc/init.d/S29gamestationsystem"
+doClean "/etc/init.d/S42networkrestart"
+
+# V4.1.0 2016-03-24
+find "/usr/share/kodi/system/keymaps" -name "joystick.*.xml" |
+    while read X
+    do
+	doClean "${X}"
+    done
+
+# V4.1.0 2016-04-10
+# the upgrade will fail to replace link by a file
+doClean "/etc/network/interfaces.base"
+doClean "/etc/wpa_supplicant/wpa_supplicant.conf"
+
+# V4.1.0 2016-06-16
+doClean "${TARGET_DIR}/etc/init.d/S10udev"
+doClean "${TARGET_DIR}/etc/init.d/S30dbus"
+doClean "${TARGET_DIR}/etc/init.d/S40network"
+doClean "${TARGET_DIR}/etc/init.d/S45connman"
+
+# V180209 2018-02-09
+doClean "${TARGET_DIR}/etc/init.d/S46network-config"
+
+# V180420 2018-04-20
+doClean "${TARGET_DIR}/etc/init.d/S95api"
+
+# V1806XX 2018-06-XX
+doClean "${TARGET_DIR}/etc/init.d/S04mountboot"
+
+exit 0

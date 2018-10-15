@@ -1,0 +1,9 @@
+config BR2_PACKAGE_GAMESTATION_ROMFS_MAME
+	bool "gamestation-romfs-mame"
+	select BR2_PACKAGE_GAMESTATION_ROMS
+	depends on BR2_PACKAGE_LIBRETRO_MAME2003 \
+	  || BR2_PACKAGE_LIBRETRO_IMAME \
+	  || BR2_PACKAGE_ADVANCEMAME \
+	  || BR2_PACKAGE_LIBRETRO_MAME2010
+	help
+	  share_init/roms and xml for mame

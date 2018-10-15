@@ -1,0 +1,23 @@
+## GAMESTATION - SYSTEM MAME ##
+
+Put your mame roms in this directory.
+
+Rom files must have a ".zip" extension.
+
+Gamestation is using libretro mame2003 as default core. So, compatible roms must come from a 0.78 mame romset
+
+Are also included in Gamestation:
+- libretro core imame4all: 0.37b5 mame romset
+- libretro core mame2010 (not available on rpi0/1): 0.139 mame romset
+- standalone emulator advancemame: 0.106 mame romset
+
+So, if you want to use a core different of the default one, you must edit your gamestation.conf file following instructions of this page :
+https://github.com/gamestation/gamestation-os/wiki/gamestation.conf-%28EN%29
+
+You can use clrmamepro available at http://mamedev.emulab.it/clrmamepro/ and use the .dat file in clrmamepro directory to check your roms.
+
+Special files for mame2003 core :
+- Add your samples files in /gamestation/share/bios/mame2003/samples/
+- Update the hiscore.dat file in /gamestation/share/bios/mame2003/ if you want latest highscores (http://highscore.mameworld.info/download.htm)
+- Download cheat.dat in /gamestation/share/bios/mame2003/ to enable cheat codes (http://cheat.retrogames.com/download/cheat081.zip)
+- Download history.dat in /gamestation/share/bios/mame2003/ to enable ingame history menu (http://www.arcade-history.com/index.php?page=download)
